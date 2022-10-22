@@ -10,7 +10,7 @@ type PhotoRepository interface {
 	CreatePhoto(payload models.Photos) (models.Photos, error)
 	GetPhoto(userId uint) ([]models.Photos, error)
 	UpdatePhoto(payload models.Photos, userId uint) (models.Photos, error)
-	DeletePhoto(payload models.Photos, userId uint) (models.Photos, error)
+	DeletePhoto(payload models.Photos, photoId uint64) (models.Photos, error)
 }
 
 func NewPhotoRepository() PhotoRepository {
@@ -51,10 +51,10 @@ func (db *dbConnection) UpdatePhoto(payload models.Photos, userId uint) (models.
 	return payload, nil
 }
 
-func (db *dbConnection) DeletePhoto(payload models.Photos, userId uint) (models.Photos, error) {
-	var user models.Users
+func (db *dbConnection) DeletePhoto(payload models.Photos, photoIdInt uint64) (models.Photos, error) {
+	var photo models.Photos
 
-	err := db.connection.Raw("DELETE FROM users WHERE id = ?", userId).Scan(&user).Error
+	err := db.connection.Raw("DELETE FROM photos WHERE id = ?", photoIdInt).Scan(&photo).Error
 
 	fmt.Println(err)
 	if err != nil {

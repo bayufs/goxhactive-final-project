@@ -15,17 +15,18 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 )
 
-type PhotoHandler struct {
-	repository repositories.PhotoRepository
+type CommentHandler struct {
+	repository repositories.CommentRepository
 }
 
-func PhtHandler() *PhotoHandler {
-	return &PhotoHandler{repositories.NewPhotoRepository()}
+func CmntHandler() *CommentHandler {
+	return &CommentHandler{repositories.NewCommentRepository()}
 }
 
-func (photoInstance PhotoHandler) CreatePhoto(ginInstance *gin.Context) {
+func (commentInstance CommentHandler) CreateComment(ginInstance *gin.Context) {
 
-	var req resources.InputPhotos
+	var req resources.InputComments
+
 	userData := ginInstance.MustGet("userData").(jwt.MapClaims)
 
 	userId := uint(userData["user_id"].(float64))
@@ -49,9 +50,6 @@ func (photoInstance PhotoHandler) CreatePhoto(ginInstance *gin.Context) {
 			case "required":
 				err_msg = fmt.Sprintf("Field : %s is required",
 					fieldErr.Field())
-			case "gte":
-				err_msg = fmt.Sprintf("Field : %s value must be greater than %s charaters",
-					fieldErr.Field(), fieldErr.Param())
 			}
 
 			ginInstance.JSON(http.StatusUnauthorized, gin.H{
@@ -63,36 +61,35 @@ func (photoInstance PhotoHandler) CreatePhoto(ginInstance *gin.Context) {
 		}
 	}
 
-	repository := photoInstance.repository
+	repository := commentInstance.repository
 
-	var payload = models.Photos{}
+	var payload = models.Comments{}
 
 	if err != nil {
 
 		fmt.Println(err.Error())
 		ginInstance.JSON(http.StatusUnauthorized, gin.H{
-			"message": "Failed to create a new photo",
+			"message": "Failed to create a comment",
 			"status":  http.StatusUnauthorized,
 		})
 
 		return
 	}
 
-	payload = models.Photos{
-		Title:    req.Title,
-		Caption:  req.Caption,
-		PhotoUrl: req.PhotoUrl,
-		UserID:   userId,
+	payload = models.Comments{
+		UserID:  userId,
+		PhotoId: req.PhotoId,
+		Message: req.Message,
 	}
 
-	res, err := repository.CreatePhoto(payload)
+	res, err := repository.CreateComment(payload)
 
 	fmt.Println(res, "Results")
 
 	if err != nil {
 
 		ginInstance.JSON(http.StatusUnauthorized, gin.H{
-			"message": "Failed to create a new photo",
+			"message": "Failed to create a comment",
 			"status":  http.StatusUnauthorized,
 		})
 
@@ -102,21 +99,21 @@ func (photoInstance PhotoHandler) CreatePhoto(ginInstance *gin.Context) {
 	if err != nil {
 
 		ginInstance.JSON(http.StatusUnauthorized, gin.H{
-			"message": "Failed to create a new customer",
+			"message": "Failed to create a comment",
 			"status":  http.StatusUnauthorized,
 		})
 
 		return
 	}
 
-	response := helpers.JWTResponse("A new user successfully created ", http.StatusCreated, res)
+	response := helpers.JWTResponse("Comment successfully created", http.StatusCreated, payload)
 	ginInstance.JSON(http.StatusOK, response)
 
 }
 
-func (photoInstance PhotoHandler) GetPhoto(ginInstance *gin.Context) {
+func (commentInstance CommentHandler) GetComment(ginInstance *gin.Context) {
 
-	repository := photoInstance.repository
+	repository := commentInstance.repository
 
 	userData := ginInstance.MustGet("userData").(jwt.MapClaims)
 
@@ -124,7 +121,7 @@ func (photoInstance PhotoHandler) GetPhoto(ginInstance *gin.Context) {
 
 	fmt.Println(userId)
 
-	res, err := repository.GetPhoto(userId)
+	res, err := repository.GetComment(userId)
 
 	fmt.Println(res, "Results")
 
@@ -138,20 +135,20 @@ func (photoInstance PhotoHandler) GetPhoto(ginInstance *gin.Context) {
 		return
 	}
 
-	response := helpers.JWTResponse("All photos ", http.StatusOK, res)
+	response := helpers.JWTResponse("All comments ", http.StatusOK, res)
 	ginInstance.JSON(http.StatusOK, response)
 
 }
 
-func (photoInstance PhotoHandler) UpdatePhoto(ginInstance *gin.Context) {
+func (commentInstance CommentHandler) UpdateComment(ginInstance *gin.Context) {
 
-	photoId := ginInstance.Param("photo_id")
+	commentId := ginInstance.Param("comment_id")
 
-	photoIdInt, err_strconv := strconv.ParseUint(photoId, 10, 64)
+	commentIdInt, err_strconv := strconv.ParseUint(commentId, 10, 64)
 	if err_strconv != nil {
 		fmt.Println(err_strconv)
 	}
-	var req resources.InputPhotos
+	var req resources.InputCommentsUpdate
 
 	err := ginInstance.ShouldBind(&req)
 	if err != nil {
@@ -181,44 +178,42 @@ func (photoInstance PhotoHandler) UpdatePhoto(ginInstance *gin.Context) {
 		}
 	}
 
-	repository := photoInstance.repository
+	repository := commentInstance.repository
 
-	var payload = models.Photos{}
+	var payload = models.Comments{}
 
 	userData := ginInstance.MustGet("userData").(jwt.MapClaims)
 
 	userId := uint(userData["user_id"].(float64))
 
-	payload = models.Photos{
-		Id:       photoIdInt,
-		Title:    req.Title,
-		Caption:  req.Caption,
-		PhotoUrl: req.PhotoUrl,
+	payload = models.Comments{
+		Id:      uint(commentIdInt),
+		Message: req.Message,
 	}
 
-	res, err := repository.UpdatePhoto(payload, userId)
+	res, err := repository.UpdateComment(payload, userId)
 
 	fmt.Println(res, "Results")
 
 	if err != nil {
 		fmt.Println(err)
 		ginInstance.JSON(http.StatusBadRequest, gin.H{
-			"message": "Failed to update user",
+			"message": "Failed to update comment",
 			"status":  http.StatusBadRequest,
 		})
 
 		return
 	}
 
-	response := helpers.JWTResponse("A photo successfully updated ", http.StatusOK, res)
+	response := helpers.JWTResponse("A comment successfully updated ", http.StatusOK, res)
 	ginInstance.JSON(http.StatusOK, response)
 }
 
-func (photoInstance PhotoHandler) DeletePhoto(ginInstance *gin.Context) {
+func (commentInstance CommentHandler) DeleteComment(ginInstance *gin.Context) {
 
-	photoId := ginInstance.Param("photo_id")
+	commentId := ginInstance.Param("comment_id")
 
-	photoIdInt, err_strconv := strconv.ParseUint(photoId, 10, 64)
+	commentIdInt, err_strconv := strconv.ParseUint(commentId, 10, 64)
 	if err_strconv != nil {
 		fmt.Println(err_strconv)
 	}
@@ -227,27 +222,27 @@ func (photoInstance PhotoHandler) DeletePhoto(ginInstance *gin.Context) {
 
 	userId := uint(userData["user_id"].(float64))
 
-	repository := photoInstance.repository
+	repository := commentInstance.repository
 
-	var payload = models.Photos{}
+	var payload = models.Comments{}
 
 	fmt.Println(userId)
 
-	res, err := repository.DeletePhoto(payload, photoIdInt)
+	res, err := repository.DeleteComment(payload, commentIdInt)
 
 	fmt.Println(res, "Results")
 
 	if err != nil {
 		fmt.Println(err)
 		ginInstance.JSON(http.StatusBadRequest, gin.H{
-			"message": "Failed to delete photo",
+			"message": "Failed to delete comment",
 			"status":  http.StatusBadRequest,
 		})
 
 		return
 	}
 
-	response := helpers.JWTResponse("Photo successfully deleted", http.StatusOK, res)
+	response := helpers.JWTResponse("Your Comment has been successfully deleted", http.StatusOK, res)
 	ginInstance.JSON(http.StatusOK, response)
 
 }
