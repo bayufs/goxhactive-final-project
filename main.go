@@ -23,5 +23,5 @@ func main() {
 	defer config.DisconnectDB(db)
 	routers.RegisterRoutes(r)
 
-	r.Run(fmt.Sprintf("%s:%s", os.Getenv("HOST"), os.Getenv("PORT")))
+	r.Run(fmt.Sprintf(":%s", os.Getenv("PORT")))
 }
